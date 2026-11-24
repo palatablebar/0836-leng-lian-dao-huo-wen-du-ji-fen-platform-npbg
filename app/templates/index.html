@@ -27,6 +27,24 @@
       <div class="panel-head"><h2>运行对账</h2></div>
       <div class="ledger" id="ledger-list"></div>
     </article>
+    <article class="panel" id="panel-exposure">
+      <div class="panel-head"><h2>暴露分钟对账（探头交接）</h2><span class="hint" id="exposure-status">--</span></div>
+      <div class="ledger" id="exposure-list"></div>
+      <div class="table-wrap" style="margin-top:8px">
+        <table><thead id="exposure-head"></thead><tbody id="exposure-body"></tbody></table>
+      </div>
+      <form id="handoff-form" class="handoff-form" style="margin-top:8px">
+        <div class="review-actions" style="flex-wrap:wrap;gap:6px">
+          <input id="ho-batch" placeholder="批次" style="width:96px" />
+          <input id="ho-at" placeholder="交接时间 2026-11-20 01:00" style="width:190px" />
+          <input id="ho-old" placeholder="原探头" style="width:80px" />
+          <input id="ho-new" placeholder="接班探头" style="width:80px" />
+          <label style="font-size:12px"><input type="checkbox" id="ho-confirmed" /> 时间已确认</label>
+          <label style="font-size:12px"><input type="checkbox" id="ho-remains" /> 原探头仍随货</label>
+          <button id="ho-submit" type="submit">登记交接并重判</button>
+        </div>
+      </form>
+    </article>
     <article class="panel" id="panel-review">
       <div class="panel-head"><h2>批次复核</h2><span class="hint" id="revision">rev 0</span></div>
       <div class="review">

@@ -18,6 +18,12 @@ MESSAGES = {
     "GATE_BLOCKED": "存在阻断项，不能签发",
     "NOT_APPROVED": "批次尚未签发",
     "BAD_REQUEST": "请求内容不完整",
+    "EXPOSURE_MISSING_MINUTES": "存在无随货读数的缺测分钟，暴露分钟未达合格口径",
+    "MISSING_MINUTES": "存在缺测分钟，不算合格",
+    "EXPOSURE_INCOMPLETE": "探头覆盖不完整，存在缺测分钟",
+    "EXPOSURE_LEDGER_UNBALANCED": "暴露分钟对账不平衡",
+    "HANDOVER_BAD_RECORD": "交接记录无法解析",
+    "HANDOVER_UNKNOWN_BATCH": "交接记录中的批次或探头不属于本次运行",
 }
 
 
@@ -26,8 +32,13 @@ class DomainIssue(Exception):
         self.code = code
         self.status = status
         self.detail = detail
+        self.codes = [code]
         super().__init__(code)
 
 
 def error_response(exc: DomainIssue):
-    return jsonify(error=exc.detail or MESSAGES.get(exc.code, "请求无法处理"), code=exc.code), exc.status
+    body = {"error": exc.detail or MESSAGES.get(exc.code, "请求无法处理"), "code": exc.code}
+    codes = getattr(exc, "codes", None)
+    if codes:
+        body["codes"] = list(dict.fromkeys([exc.code, *codes]))
+    return jsonify(body), exc.status

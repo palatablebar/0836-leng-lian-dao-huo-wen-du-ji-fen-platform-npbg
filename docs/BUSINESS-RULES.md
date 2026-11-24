@@ -21,3 +21,14 @@ MKT 使用 10000 K 作为活化能与气体常数的比值。探针偏差定义�
 ## 批次
 
 同一来源重复执行得到同一批次数值。签发要求阻断项为零，并携带当前版本号；旧版本提交会被拒绝。证据只在签发后生成。
+
+## 换车探头交接与暴露分钟对账
+
+- 同一批货在换车重叠期有两支探头同时记录时，暴露分钟按分钟并集去重，只计一次；`raw - duplicate = union`，且 `window = exposure + missing`。
+- 接班探头断档时，只有“确认仍随货”的原探头读数可以补位，计入 `filled_minutes`；未确认随货的原探头读数不冒充随货读数。
+- 两支探头都在报、且交接时间未确认时，按较暖（保守）读数合并（`conservative_minutes`），温度积分不会因选取较冷一支而变低。
+- 窗口内没有合格随货读数的分钟计入 `missing_minutes`（缺测），有缺测即 `qualified=false`，签发闸门返回 `EXPOSURE_MISSING_MINUTES`。
+- 交接记录允许迟到：以当前已接收的全部交接记录从来源行整体重算，读数归属随之改变。
+- 交接记录按内容摘要幂等去重：相同记录重试 `handover_unchanged=true` 且不新增版本、不重复累计；新内容才升版本并重判。
+- 工作台“暴露分钟对账（探头交接）”面板与 `payload.exposure` / `payload.ledger.exposure` 给出逐批与汇总的对账结果。核心实现在 `app/reconcile/exposure.py`（纯领域），接收与重算在 `app/reconcile/orchestration.py`。
+

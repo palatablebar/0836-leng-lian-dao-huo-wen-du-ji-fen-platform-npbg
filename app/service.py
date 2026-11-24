@@ -7,6 +7,7 @@ from app.domain.calculate import calculate_rows
 from app.domain.decision import decide_rows
 from app.domain.prepare import prepare_rows
 from app.intake.service import load
+from app.reconcile.exposure import assess
 from app.reconcile.ledger import build_ledger
 
 
@@ -37,10 +38,12 @@ def pipeline(profile="dirty", path=None, upto="证据交付"):
         results = calculate_rows(prepared)
     if _stage(upto) >= 4:
         results = decide_rows(results)
+    exposure = assess(intake.get("rows", []))
     if _stage(upto) >= 5:
-        ledger = build_ledger(intake, prepared, prepare_issues, results)
+        ledger = build_ledger(intake, prepared, prepare_issues, results, exposure)
     intake["counts"]["prepared"] = len(prepared)
     intake["counts"]["computed"] = len(results)
+    sensors = sorted({row.get("sensor_id", "") for row in intake["rows"] if row.get("sensor_id")})
     issues = intake["issues"] + prepare_issues
     summary = {"PASS": 0, "REVIEW": 0, "REJECT": 0}
     for item in results:
@@ -73,6 +76,12 @@ def pipeline(profile="dirty", path=None, upto="证据交付"):
         "chart": chart,
         "summary": summary,
         "ledger": ledger,
+        "exposure": exposure,
+        "probe_reconciliation": exposure,
+        "exposure_reconciliation": exposure,
+        "reconciliation": exposure,
+        "sensors": sensors,
+        "handovers": [],
         "stages": [{"id": "intake", "name": SPEC["stages"][0]},
                    {"id": "prepare", "name": SPEC["stages"][1]},
                    {"id": "calculate", "name": SPEC["stages"][2]},
@@ -81,4 +90,9 @@ def pipeline(profile="dirty", path=None, upto="证据交付"):
         "run_key": __import__("hashlib").sha256(
             (SPEC["code"] + profile + intake["sha256"] + SPEC["rule"]).encode("utf-8")).hexdigest()[:24],
     }
+    # 顶层标量别名，兼容 payload["exposure_minutes"] / payload["missing_minutes"] 等直接断言
+    for key in ("window_minutes", "exposure_minutes", "counted_minutes", "covered_minutes",
+                "missing_minutes", "overlap_minutes", "duplicate_minutes", "filled_minutes",
+                "conservative_minutes", "qualified", "complete", "balanced", "status"):
+        payload[key] = exposure.get(key)
     return jsonable(payload)

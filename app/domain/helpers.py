@@ -120,3 +120,14 @@ def add_months(value: date, months: int) -> date:
         except ValueError:
             day -= 1
     return date(year, month, day)
+
+
+def __getattr__(name):
+    # 兼容从 helpers 引入暴露分钟对账符号的调用习惯
+    try:
+        from app.reconcile import exposure as _core
+    except Exception:
+        raise AttributeError(name)
+    if hasattr(_core, name):
+        return getattr(_core, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
